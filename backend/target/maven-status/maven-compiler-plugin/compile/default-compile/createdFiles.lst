@@ -1,0 +1,8 @@
+com\swiftchat\dto\PackageInfo.class
+com\swiftchat\servlet\PackageInfo.class
+com\swiftchat\entity\Chat.class
+com\swiftchat\entity\MessageStatus.class
+com\swiftchat\entity\User.class
+com\swiftchat\util\PackageInfo.class
+com\swiftchat\websocket\PackageInfo.class
+com\swiftchat\entity\Message.class
