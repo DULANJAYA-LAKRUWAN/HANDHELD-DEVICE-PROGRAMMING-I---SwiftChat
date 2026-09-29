@@ -115,6 +115,14 @@ class ApiClient {
   markChatAsRead(chatId, userId) {
     return this.post(`/api/chats/${chatId}/read?userId=${userId}`, {});
   }
+
+  getUserProfile(userId) {
+    return this.get(`/api/users/profile?userId=${userId}`);
+  }
+
+  updateUserProfile(userId, data) {
+    return this.post('/api/users/profile', { userId, ...data });
+  }
 }
 
 export const api = new ApiClient(API_BASE_URL);

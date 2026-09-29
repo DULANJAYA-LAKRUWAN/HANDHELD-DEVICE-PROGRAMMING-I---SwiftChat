@@ -66,6 +66,21 @@ export function AuthProvider({ children }) {
   };
 
   /**
+   * Updates user data in context and local storage.
+   */
+  const updateUser = async (updatedData) => {
+    try {
+      const mergedUser = { ...user, ...updatedData };
+      setUser(mergedUser);
+      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mergedUser));
+      return mergedUser;
+    } catch (err) {
+      console.error('Error updating stored user data:', err);
+      throw err;
+    }
+  };
+
+  /**
    * Logs out the user and clears unencrypted local storage.
    */
   const logout = async () => {
@@ -85,6 +100,7 @@ export function AuthProvider({ children }) {
         isLoading,
         login,
         register,
+        updateUser,
         logout,
         isAuthenticated: !!user,
       }}

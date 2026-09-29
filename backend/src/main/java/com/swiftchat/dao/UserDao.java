@@ -145,4 +145,30 @@ public class UserDao {
             throw ex;
         }
     }
+
+    /**
+     * Updates an existing user record.
+     *
+     * @param user Attached or detached user entity
+     * @return Merged user entity
+     * @throws Exception if persistence fails
+     */
+    public User updateUser(User user) throws Exception {
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            User merged = (User) session.merge(user);
+            transaction.commit();
+            return merged;
+        } catch (Exception ex) {
+            if (transaction != null && transaction.isActive()) {
+                try {
+                    transaction.rollback();
+                } catch (Exception ignored) {
+                }
+            }
+            LOGGER.log(Level.SEVERE, "Error updating user: " + user.getId(), ex);
+            throw ex;
+        }
+    }
 }

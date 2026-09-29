@@ -9,6 +9,8 @@ import RegisterScreen from '../screens/RegisterScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import UserSearchScreen from '../screens/UserSearchScreen';
 import ChatScreen from '../screens/ChatScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,13 +53,27 @@ export default function AppNavigator() {
                 title: 'SwiftChat',
                 headerBackVisible: false,
                 headerRight: () => (
-                  <TouchableOpacity
-                    onPress={logout}
-                    style={styles.headerButton}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.logoutText}>Sign Out</Text>
-                  </TouchableOpacity>
+                  <View style={styles.headerActions}>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Profile')}
+                      style={styles.headerAvatarButton}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.headerAvatar}>
+                        <Text style={styles.headerAvatarInitial}>
+                          {(user?.username || '?').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Settings')}
+                      style={styles.headerIconButton}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.headerIcon}>⚙️</Text>
+                    </TouchableOpacity>
+                  </View>
                 ),
               })}
             />
@@ -76,6 +92,20 @@ export default function AppNavigator() {
                   ? `@${route.params.otherUser.username}`
                   : 'Conversation',
               })}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{
+                title: 'My Profile',
+              }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                title: 'Settings',
+              }}
             />
           </Stack.Group>
         ) : (
@@ -97,17 +127,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#0F172A',
   },
-  headerButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerAvatarButton: {
+    padding: 2,
+  },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0284C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#38BDF8',
+  },
+  headerAvatarInitial: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  headerIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#1E293B',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#334155',
   },
-  logoutText: {
-    color: '#F87171',
-    fontSize: 13,
-    fontWeight: '600',
+  headerIcon: {
+    fontSize: 16,
   },
 });
