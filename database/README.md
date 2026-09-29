@@ -21,8 +21,19 @@
 4. **Referential actions:** Foreign keys specify `ON DELETE CASCADE ON UPDATE CASCADE` to prevent orphaned child rows.
 
 ## Initialization Instructions
-Open MySQL Workbench, MySQL CLI, or your preferred SQL client:
 
+### Windows PowerShell:
+```powershell
+Get-Content database/schema.sql | mysql -u root -p swiftchat_db
+```
+
+### Windows Command Prompt (cmd.exe) / Linux / macOS (Bash):
 ```bash
-mysql -u root -p < database/schema.sql
+mysql -u root -p swiftchat_db < database/schema.sql
+```
+
+### Inside MySQL Shell (Workbench / MySQL CLI):
+```sql
+USE swiftchat_db;
+SOURCE database/schema.sql;
 ```

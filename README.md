@@ -215,19 +215,39 @@ SwiftChat/
    CREATE DATABASE swiftchat_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
 2. Execute the initialization schema:
-   ```bash
-   mysql -u root -p swiftchat_db < database/schema.sql
-   ```
+   * **Windows PowerShell:**
+     ```powershell
+     Get-Content database/schema.sql | mysql -u root -p swiftchat_db
+     ```
+   * **Windows Command Prompt (cmd.exe):**
+     ```cmd
+     mysql -u root -p swiftchat_db < database/schema.sql
+     ```
+   * **Linux / macOS (Bash/Zsh):**
+     ```bash
+     mysql -u root -p swiftchat_db < database/schema.sql
+     ```
+   * **Inside MySQL Interactive Shell:**
+     ```sql
+     USE swiftchat_db;
+     SOURCE database/schema.sql;
+     ```
 3. Set your database credentials as environment variables (or configure them in `hibernate.cfg.xml`):
-   ```bash
-   # Windows PowerShell
-   $env:DB_USER="root"
-   $env:DB_PASSWORD="your_password"
-
-   # Linux / macOS
-   export DB_USER="root"
-   export DB_PASSWORD="your_password"
-   ```
+   * **Windows PowerShell:**
+     ```powershell
+     $env:DB_USER="root"
+     $env:DB_PASSWORD="your_password"
+     ```
+   * **Windows Command Prompt:**
+     ```cmd
+     set DB_USER=root
+     set DB_PASSWORD=your_password
+     ```
+   * **Linux / macOS:**
+     ```bash
+     export DB_USER="root"
+     export DB_PASSWORD="your_password"
+     ```
 
 ---
 
