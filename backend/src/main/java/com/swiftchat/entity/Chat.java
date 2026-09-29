@@ -6,7 +6,9 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Entity representing a conversation channel between two participants.
+ * Entity representing a private 1-on-1 chat session between two users.
+ * Maps to database table 'chats'.
+ * Designed without bidirectional collections to prevent recursive serialization issues.
  */
 @Entity
 @Table(
@@ -40,9 +42,15 @@ public class Chat implements Serializable {
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdAt;
 
-    public Chat() {
+    /**
+     * Protected no-argument constructor required by Hibernate / JPA specification.
+     */
+    protected Chat() {
     }
 
+    /**
+     * Parameterized constructor for establishing a chat between two distinct users.
+     */
     public Chat(User user1, User user2) {
         this.user1 = user1;
         this.user2 = user2;

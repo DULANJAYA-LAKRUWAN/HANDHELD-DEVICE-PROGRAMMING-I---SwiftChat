@@ -6,7 +6,8 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Entity representing a registered user in the SwiftChat platform.
+ * Entity representing a registered user in SwiftChat.
+ * Maps to database table 'users'.
  */
 @Entity
 @Table(
@@ -38,9 +39,16 @@ public class User implements Serializable {
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdAt;
 
-    public User() {
+    /**
+     * Protected no-argument constructor required by Hibernate / JPA specification.
+     */
+    protected User() {
     }
 
+    /**
+     * Sensible parameterized constructor for creating new user records.
+     * Note: Does not perform password hashing; pre-hashed value must be passed.
+     */
     public User(String username, String passwordHash, String contactNo) {
         this.username = username;
         this.passwordHash = passwordHash;

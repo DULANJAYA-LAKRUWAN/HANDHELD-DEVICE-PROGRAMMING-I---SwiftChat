@@ -1,0 +1,8 @@
+/**
+ * Utility helper: Formats timestamps for chat messages and lists.
+ */
+export function formatTime(timestamp) {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}

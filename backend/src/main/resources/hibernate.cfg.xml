@@ -5,30 +5,32 @@
 
 <hibernate-configuration>
     <session-factory>
-        <!-- JDBC Database Connection Settings -->
+        <!-- 
+            JDBC Database Connection Settings
+            Connection parameters (URL, username, password) are dynamically injected
+            by HibernateUtil from environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD)
+            at runtime. No hardcoded default credentials are kept in this file.
+        -->
         <property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property>
-        <property name="hibernate.connection.url">jdbc:mysql://localhost:3306/swiftchat_db?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC&amp;characterEncoding=UTF-8</property>
-        <property name="hibernate.connection.username">root</property>
-        <property name="hibernate.connection.password">password</property>
 
-        <!-- Hibernate SQL Dialect for MySQL 8 -->
+        <!-- Hibernate SQL Dialect for MySQL 8 (Hibernate 6.x) -->
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
 
-        <!-- Connection Pool Settings (default built-in pool) -->
+        <!-- Connection Pool Settings (Initial development pool) -->
         <property name="hibernate.connection.pool_size">10</property>
 
-        <!-- Echo and Format all executed SQL to stdout -->
+        <!-- Development SQL Logging -->
         <property name="hibernate.show_sql">true</property>
         <property name="hibernate.format_sql">true</property>
         <property name="hibernate.highlight_sql">true</property>
 
-        <!-- Update database schema on startup without dropping tables -->
+        <!-- Automatic Schema Evolution in Development -->
         <property name="hibernate.hbm2ddl.auto">update</property>
 
-        <!-- Current Session Context -->
+        <!-- Thread-bound Session Context -->
         <property name="hibernate.current_session_context_class">thread</property>
 
-        <!-- Registered Entity Classes -->
+        <!-- Registered Entity Mappings (Pure Jakarta Persistence) -->
         <mapping class="com.swiftchat.entity.User"/>
         <mapping class="com.swiftchat.entity.Chat"/>
         <mapping class="com.swiftchat.entity.Message"/>

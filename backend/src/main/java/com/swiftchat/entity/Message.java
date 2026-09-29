@@ -6,7 +6,8 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * Entity representing an individual text message exchanged within a chat.
+ * Entity representing an individual text message sent within a chat session.
+ * Maps to database table 'messages'.
  */
 @Entity
 @Table(
@@ -42,19 +43,28 @@ public class Message implements Serializable {
     private Date timestamp;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('sent', 'delivered', 'read') DEFAULT 'sent'")
-    private MessageStatus status = MessageStatus.sent;
+    @Column(name = "status", nullable = false, length = 15)
+    private MessageStatus status = MessageStatus.SENT;
 
-    public Message() {
+    /**
+     * Protected no-argument constructor required by Hibernate / JPA specification.
+     */
+    protected Message() {
     }
 
+    /**
+     * Parameterized constructor for initiating a new outgoing message.
+     */
     public Message(Chat chat, User sender, String text) {
         this.chat = chat;
         this.sender = sender;
         this.text = text;
-        this.status = MessageStatus.sent;
+        this.status = MessageStatus.SENT;
     }
 
+    /**
+     * Parameterized constructor specifying explicit status.
+     */
     public Message(Chat chat, User sender, String text, MessageStatus status) {
         this.chat = chat;
         this.sender = sender;
@@ -68,7 +78,7 @@ public class Message implements Serializable {
             this.timestamp = new Date();
         }
         if (this.status == null) {
-            this.status = MessageStatus.sent;
+            this.status = MessageStatus.SENT;
         }
     }
 

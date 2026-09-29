@@ -1,11 +1,14 @@
 package com.swiftchat.entity;
 
 /**
- * Enumeration representing the delivery and read states of a chat message.
- * Aligned with the database ENUM('sent', 'delivered', 'read').
+ * Enumeration representing message delivery status.
+ * Values:
+ * - SENT: Message submitted by sender and recorded in database
+ * - DELIVERED: Message reached recipient client session
+ * - READ: Message viewed by recipient
  */
 public enum MessageStatus {
-    sent,
-    delivered,
-    read
+    SENT,
+    DELIVERED,
+    READ
 }
