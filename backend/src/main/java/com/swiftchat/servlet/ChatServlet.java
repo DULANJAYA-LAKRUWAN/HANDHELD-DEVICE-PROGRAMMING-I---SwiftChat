@@ -6,9 +6,11 @@ import com.google.gson.JsonSyntaxException;
 import com.swiftchat.dto.ApiResponseDTO;
 import com.swiftchat.dto.ChatDTO;
 import com.swiftchat.dto.UserDTO;
+import com.swiftchat.dto.WebSocketMessageDTO;
 import com.swiftchat.entity.Chat;
 import com.swiftchat.entity.User;
 import com.swiftchat.service.ChatService;
+import com.swiftchat.util.GsonProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -23,10 +25,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * REST Servlet for managing user chat channels.
+ * REST Servlet for managing user chat channels and read receipts.
  * Endpoints:
- * - GET /api/chats?userId=...       (Fetches active conversations for a user)
- * - POST /api/chats                 (Creates or retrieves a chat between two users)
+ * - GET /api/chats?userId=...               (Fetches active conversations for a user with unread counts)
+ * - GET /api/chats/{chatId}/messages?userId=... (Fetches messages and marks them as read)
+ * - POST /api/chats                         (Creates or retrieves a chat between two users)
+ * - POST|PUT /api/chats/{chatId}/read?userId=... (Explicitly marks messages in chat as read)
  */
 @WebServlet(name = "ChatServlet", urlPatterns = {"/api/chats", "/api/chats/*"})
 public class ChatServlet extends HttpServlet {
@@ -39,12 +43,12 @@ public class ChatServlet extends HttpServlet {
 
     public ChatServlet() {
         this.chatService = new ChatService();
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     public ChatServlet(ChatService chatService) {
         this.chatService = chatService;
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     @Override
@@ -61,7 +65,15 @@ public class ChatServlet extends HttpServlet {
             String idStr = pathInfo.replaceAll("[^0-9]", "");
             try {
                 Long chatId = Long.parseLong(idStr);
-                List<com.swiftchat.dto.WebSocketMessageDTO> history = chatService.getChatHistoryDTOs(chatId);
+                String userIdParam = request.getParameter("userId");
+                if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+                    try {
+                        Long currentUserId = Long.parseLong(userIdParam.trim());
+                        chatService.markChatAsRead(chatId, currentUserId);
+                    } catch (Exception ignored) {
+                    }
+                }
+                List<WebSocketMessageDTO> history = chatService.getChatHistoryDTOs(chatId);
                 response.setStatus(HttpServletResponse.SC_OK);
                 out.write(gson.toJson(ApiResponseDTO.success("Chat history retrieved successfully.", history)));
                 return;
@@ -104,6 +116,12 @@ public class ChatServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        String pathInfo = request.getPathInfo();
+        if (pathInfo != null && pathInfo.matches("^/\\d+/read/?$")) {
+            handleMarkAsRead(request, response, pathInfo);
+            return;
+        }
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -153,7 +171,8 @@ public class ChatServlet extends HttpServlet {
                     chat.getUser2().getId(),
                     UserDTO.fromEntity(otherUserEntity),
                     null,
-                    chat.getCreatedAt()
+                    chat.getCreatedAt(),
+                    0
             );
 
             response.setStatus(HttpServletResponse.SC_OK);
@@ -168,5 +187,55 @@ public class ChatServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             out.write(gson.toJson(ApiResponseDTO.error("Failed to establish chat session.")));
         }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String pathInfo = request.getPathInfo();
+        if (pathInfo != null && pathInfo.matches("^/\\d+/read/?$")) {
+            handleMarkAsRead(request, response, pathInfo);
+            return;
+        }
+        super.doPut(request, response);
+    }
+
+    private void handleMarkAsRead(HttpServletRequest request, HttpServletResponse response, String pathInfo)
+            throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        PrintWriter out = response.getWriter();
+
+        String idStr = pathInfo.replaceAll("[^0-9]", "");
+        Long chatId = Long.parseLong(idStr);
+
+        Long userId = null;
+        String userIdParam = request.getParameter("userId");
+        if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+            try {
+                userId = Long.parseLong(userIdParam.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        if (userId == null) {
+            try {
+                JsonObject body = gson.fromJson(request.getReader(), JsonObject.class);
+                if (body != null && body.has("userId")) {
+                    userId = body.get("userId").getAsLong();
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (userId == null) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.write(gson.toJson(ApiResponseDTO.error("Parameter 'userId' is required to mark messages as read.")));
+            return;
+        }
+
+        int updated = chatService.markChatAsRead(chatId, userId);
+        response.setStatus(HttpServletResponse.SC_OK);
+        out.write(gson.toJson(ApiResponseDTO.success("Messages marked as read.", updated)));
     }
 }

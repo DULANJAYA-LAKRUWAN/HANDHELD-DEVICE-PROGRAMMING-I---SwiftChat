@@ -128,18 +128,35 @@ public class ChatService {
                 );
             }
 
+            int unreadCount = messageDao.getUnreadMessageCount(chat.getChatId(), currentUserId);
+
             ChatDTO dto = new ChatDTO(
                     chat.getChatId(),
                     chat.getUser1().getId(),
                     chat.getUser2().getId(),
                     otherUserDTO,
                     lastMsgDTO,
-                    chat.getCreatedAt()
+                    chat.getCreatedAt(),
+                    unreadCount
             );
             dtoList.add(dto);
         }
 
         return dtoList;
+    }
+
+    /**
+     * Marks all unread incoming messages in a conversation as READ for the specified recipient.
+     *
+     * @param chatId the chat conversation ID
+     * @param currentUserId the receiving user reading the messages
+     * @return the number of messages updated to READ
+     */
+    public int markChatAsRead(Long chatId, Long currentUserId) {
+        if (chatId == null || currentUserId == null) {
+            return 0;
+        }
+        return messageDao.markMessagesAsRead(chatId, currentUserId);
     }
 
     /**

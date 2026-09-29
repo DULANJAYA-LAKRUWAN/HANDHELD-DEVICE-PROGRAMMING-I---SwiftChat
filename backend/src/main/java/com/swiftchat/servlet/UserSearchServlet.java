@@ -5,6 +5,7 @@ import com.swiftchat.dao.UserDao;
 import com.swiftchat.dto.ApiResponseDTO;
 import com.swiftchat.dto.UserDTO;
 import com.swiftchat.entity.User;
+import com.swiftchat.util.GsonProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -33,12 +34,12 @@ public class UserSearchServlet extends HttpServlet {
 
     public UserSearchServlet() {
         this.userDao = new UserDao();
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     public UserSearchServlet(UserDao userDao) {
         this.userDao = userDao;
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     @Override

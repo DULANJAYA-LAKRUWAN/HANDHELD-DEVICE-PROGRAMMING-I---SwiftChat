@@ -8,6 +8,7 @@ import com.swiftchat.dto.UserDTO;
 import com.swiftchat.entity.User;
 import com.swiftchat.exception.DuplicateUserException;
 import com.swiftchat.service.AuthService;
+import com.swiftchat.util.GsonProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -34,12 +35,12 @@ public class RegisterServlet extends HttpServlet {
 
     public RegisterServlet() {
         this.authService = new AuthService();
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     public RegisterServlet(AuthService authService) {
         this.authService = authService;
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     @Override

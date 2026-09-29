@@ -86,7 +86,69 @@ public class MessageDao {
             return query.uniqueResult();
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Error retrieving last message for chatId: " + chatId, ex);
-            throw ex;
+            return null;
+        }
+    }
+
+    /**
+     * Counts unread incoming messages in a conversation for a specific user.
+     *
+     * @param chatId        the chat room ID
+     * @param currentUserId the receiving user ID
+     * @return count of messages not authored by currentUserId and not yet marked READ
+     */
+    public int getUnreadMessageCount(Long chatId, Long currentUserId) {
+        if (chatId == null || currentUserId == null) {
+            return 0;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT COUNT(m) FROM Message m WHERE m.chat.chatId = :chatId " +
+                    "AND m.sender.id != :currentUserId AND m.status != :readStatus";
+            Query<Long> query = session.createQuery(hql, Long.class);
+            query.setParameter("chatId", chatId);
+            query.setParameter("currentUserId", currentUserId);
+            query.setParameter("readStatus", com.swiftchat.entity.MessageStatus.READ);
+            Long count = query.uniqueResult();
+            return count != null ? count.intValue() : 0;
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Error counting unread messages for chatId: " + chatId, ex);
+            return 0;
+        }
+    }
+
+    /**
+     * Marks all incoming messages in a chat as READ for a specific recipient.
+     *
+     * @param chatId        the chat room ID
+     * @param currentUserId the user reading the messages
+     * @return number of messages updated
+     */
+    public int markMessagesAsRead(Long chatId, Long currentUserId) {
+        if (chatId == null || currentUserId == null) {
+            return 0;
+        }
+        Transaction transaction = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            transaction = session.beginTransaction();
+            String hql = "UPDATE Message m SET m.status = :readStatus " +
+                    "WHERE m.chat.chatId = :chatId AND m.sender.id != :currentUserId AND m.status != :readStatus";
+            int updated = session.createMutationQuery(hql)
+                    .setParameter("readStatus", com.swiftchat.entity.MessageStatus.READ)
+                    .setParameter("chatId", chatId)
+                    .setParameter("currentUserId", currentUserId)
+                    .executeUpdate();
+            transaction.commit();
+            LOGGER.info("Marked " + updated + " messages as READ in chatId: " + chatId);
+            return updated;
+        } catch (Exception ex) {
+            if (transaction != null && transaction.isActive()) {
+                try {
+                    transaction.rollback();
+                } catch (Exception ignored) {
+                }
+            }
+            LOGGER.log(Level.SEVERE, "Error marking messages as read for chatId: " + chatId, ex);
+            return 0;
         }
     }
 }

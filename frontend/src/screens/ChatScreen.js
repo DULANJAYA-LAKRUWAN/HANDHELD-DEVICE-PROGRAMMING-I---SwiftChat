@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../hooks/useChat';
 import ChatBubble from '../components/ChatBubble';
+import { formatDateDivider, parseDate } from '../utils/formatDate';
 
 /**
  * Real-Time Chat Screen
@@ -44,20 +45,53 @@ export default function ChatScreen({ route }) {
     }
   };
 
-  const renderMessageItem = ({ item }) => {
-    const isCurrentUser = Number(item.senderId) === Number(user?.id);
-    return (
-      <ChatBubble
-        message={item}
-        isCurrentUser={isCurrentUser}
-        currentUserId={user?.id}
-      />
-    );
-  };
-
   // For inverted FlatList: most recent message is at index 0 (bottom of screen)
   const reversedMessages = [...messages].reverse();
   const hasMessages = reversedMessages.length > 0;
+
+  const renderMessageItem = ({ item, index }) => {
+    const isCurrentUser = Number(item.senderId) === Number(user?.id);
+
+    // Calculate if date divider should be displayed
+    const currentDate = parseDate(item.timestamp);
+    const nextItem = reversedMessages[index + 1];
+    let showDateDivider = false;
+
+    if (!nextItem) {
+      // Oldest message (top of chat) starts a date group
+      showDateDivider = true;
+    } else {
+      const prevDate = parseDate(nextItem.timestamp);
+      if (
+        currentDate &&
+        prevDate &&
+        (currentDate.getFullYear() !== prevDate.getFullYear() ||
+          currentDate.getMonth() !== prevDate.getMonth() ||
+          currentDate.getDate() !== prevDate.getDate())
+      ) {
+        showDateDivider = true;
+      }
+    }
+
+    return (
+      <View>
+        {showDateDivider && (
+          <View style={styles.dateDividerContainer}>
+            <View style={styles.dateDividerPill}>
+              <Text style={styles.dateDividerText}>
+                {formatDateDivider(item.timestamp)}
+              </Text>
+            </View>
+          </View>
+        )}
+        <ChatBubble
+          message={item}
+          isCurrentUser={isCurrentUser}
+          currentUserId={user?.id}
+        />
+      </View>
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -323,5 +357,29 @@ const styles = StyleSheet.create({
   },
   sendButtonTextDisabled: {
     color: '#64748B',
+  },
+  dateDividerContainer: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  dateDividerPill: {
+    backgroundColor: '#1E293B',
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  dateDividerText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
 });

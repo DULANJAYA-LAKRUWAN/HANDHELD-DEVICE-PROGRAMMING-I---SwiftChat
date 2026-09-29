@@ -13,7 +13,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { formatTime } from '../utils/formatDate';
+import { formatChatListDate } from '../utils/formatDate';
 
 export default function ChatListScreen({ navigation }) {
   const { user, logout } = useAuth();
@@ -61,32 +61,76 @@ export default function ChatListScreen({ navigation }) {
     const partnerName = item.otherUser ? item.otherUser.username : 'Unknown User';
     const initial = partnerName.charAt(0).toUpperCase();
     const lastMsg = item.lastMessage ? item.lastMessage.text : 'No messages yet';
-    const timestamp = item.lastMessage
-      ? formatTime(item.lastMessage.timestamp)
-      : formatTime(item.createdAt);
+    const rawTimestamp = item.lastMessage ? item.lastMessage.timestamp : item.createdAt;
+    const timestamp = formatChatListDate(rawTimestamp);
+
+    const unreadCount = item.unreadCount || 0;
+    const hasUnread = unreadCount > 0;
+
+    // Check if the current user authored the latest message
+    const isOutgoing =
+      item.lastMessage &&
+      user?.id &&
+      Number(item.lastMessage.senderId) === Number(user.id);
+
+    const isRead = item.lastMessage?.status === 'READ';
+    const isDelivered = item.lastMessage?.status === 'DELIVERED';
+    const tickColor = isRead ? '#38BDF8' : '#94A3B8';
+    const tickText = isRead || isDelivered ? '✓✓' : '✓';
 
     return (
       <TouchableOpacity
-        style={styles.chatCard}
+        style={[styles.chatCard, hasUnread ? styles.unreadChatCard : null]}
         onPress={() => handleOpenChat(item)}
         activeOpacity={0.7}
       >
         {/* User Avatar Initial */}
-        <View style={styles.avatar}>
+        <View style={[styles.avatar, hasUnread ? styles.unreadAvatar : null]}>
           <Text style={styles.avatarText}>{initial}</Text>
         </View>
 
         {/* Conversation Metadata */}
         <View style={styles.chatInfo}>
           <View style={styles.chatHeaderRow}>
-            <Text style={styles.partnerName} numberOfLines={1}>
+            <Text
+              style={[styles.partnerName, hasUnread ? styles.unreadPartnerName : null]}
+              numberOfLines={1}
+            >
               {partnerName}
             </Text>
-            <Text style={styles.timestampText}>{timestamp}</Text>
+            <Text
+              style={[styles.timestampText, hasUnread ? styles.unreadTimestampText : null]}
+            >
+              {timestamp}
+            </Text>
           </View>
-          <Text style={styles.lastMessageText} numberOfLines={1}>
-            {lastMsg}
-          </Text>
+
+          <View style={styles.chatPreviewRow}>
+            <View style={styles.messagePreviewContainer}>
+              {isOutgoing && (
+                <Text style={[styles.previewTick, { color: tickColor }]}>
+                  {tickText}{' '}
+                </Text>
+              )}
+              <Text
+                style={[
+                  styles.lastMessageText,
+                  hasUnread ? styles.unreadMessageText : null,
+                ]}
+                numberOfLines={1}
+              >
+                {lastMsg}
+              </Text>
+            </View>
+
+            {hasUnread && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -205,9 +249,67 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
   },
+  unreadTimestampText: {
+    color: '#22C55E',
+    fontWeight: '700',
+  },
+  unreadPartnerName: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  chatPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 3,
+  },
+  messagePreviewContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  previewTick: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginRight: 3,
+    letterSpacing: -1.5,
+  },
   lastMessageText: {
     fontSize: 14,
     color: '#94A3B8',
+    flex: 1,
+  },
+  unreadMessageText: {
+    color: '#F8FAFC',
+    fontWeight: '700',
+  },
+  unreadChatCard: {
+    borderColor: '#38BDF8',
+    borderWidth: 1.2,
+  },
+  unreadAvatar: {
+    borderWidth: 2,
+    borderColor: '#38BDF8',
+  },
+  unreadBadge: {
+    backgroundColor: '#22C55E',
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
   emptyContainer: {
     alignItems: 'center',

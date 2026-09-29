@@ -18,14 +18,14 @@ export function useChat(chatId, currentUserId, targetUserId) {
   const wsRef = useRef(null);
   const isMountedRef = useRef(true);
 
-  // 1. Fetch past message history via REST API
+  // 1. Fetch past message history via REST API and mark as read
   const loadMessageHistory = useCallback(async () => {
     if (!chatId) return;
 
     setIsLoadingHistory(true);
     setError(null);
     try {
-      const response = await api.getChatMessages(chatId);
+      const response = await api.getChatMessages(chatId, currentUserId);
       if (isMountedRef.current && response && response.data) {
         setMessages(response.data);
       }
@@ -39,7 +39,24 @@ export function useChat(chatId, currentUserId, targetUserId) {
         setIsLoadingHistory(false);
       }
     }
-  }, [chatId]);
+  }, [chatId, currentUserId]);
+
+  const sendReadReceipt = useCallback(() => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && chatId && currentUserId) {
+      try {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'READ',
+            chatId: Number(chatId),
+            readerId: Number(currentUserId),
+            recipientId: Number(targetUserId),
+          })
+        );
+      } catch (err) {
+        console.warn('Failed to send read receipt:', err);
+      }
+    }
+  }, [chatId, currentUserId, targetUserId]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -65,6 +82,7 @@ export function useChat(chatId, currentUserId, targetUserId) {
         console.log(`WebSocket connected for user ${currentUserId}`);
         setIsConnected(true);
         setError(null);
+        sendReadReceipt();
       }
     };
 
@@ -72,8 +90,28 @@ export function useChat(chatId, currentUserId, targetUserId) {
       try {
         const incomingData = JSON.parse(event.data);
 
+        // Handle Read Receipt: update all outgoing messages to READ status
+        if (incomingData && incomingData.type === 'READ_RECEIPT') {
+          if (Number(incomingData.chatId) === Number(chatId)) {
+            setMessages((prevMessages) =>
+              prevMessages.map((m) =>
+                Number(m.senderId) === Number(currentUserId)
+                  ? { ...m, status: 'READ' }
+                  : m
+              )
+            );
+          }
+          return;
+        }
+
         // Ensure incoming message belongs to this active chat
         if (incomingData && Number(incomingData.chatId) === Number(chatId)) {
+          // If we receive an incoming message from the partner while inside this screen, acknowledge as READ
+          if (Number(incomingData.senderId) !== Number(currentUserId)) {
+            sendReadReceipt();
+            api.markChatAsRead(chatId, currentUserId).catch(() => {});
+          }
+
           setMessages((prevMessages) => {
             // Check for duplicate message (e.g. echo of sent message)
             const exists = prevMessages.some(

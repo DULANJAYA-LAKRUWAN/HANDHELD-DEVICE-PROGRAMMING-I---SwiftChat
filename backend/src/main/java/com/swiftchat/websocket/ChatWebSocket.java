@@ -1,9 +1,11 @@
 package com.swiftchat.websocket;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.swiftchat.dto.WebSocketMessageDTO;
 import com.swiftchat.entity.Message;
 import com.swiftchat.service.ChatService;
+import com.swiftchat.util.GsonProvider;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
@@ -32,7 +34,7 @@ public class ChatWebSocket {
     private static final Map<Long, Session> activeSessions = new ConcurrentHashMap<>();
 
     private static final ChatService chatService = new ChatService();
-    private static final Gson gson = new Gson();
+    private static final Gson gson = GsonProvider.getGson();
 
     private Long userId;
 
@@ -68,7 +70,37 @@ public class ChatWebSocket {
     public void onMessage(String jsonPayload, Session session) {
         LOGGER.info("Received WebSocket message from user " + this.userId + ": " + jsonPayload);
         try {
-            WebSocketMessageDTO incomingDto = gson.fromJson(jsonPayload, WebSocketMessageDTO.class);
+            JsonObject root = gson.fromJson(jsonPayload, JsonObject.class);
+            if (root == null) {
+                return;
+            }
+
+            // Handle Read Receipt event: {"type":"READ", "chatId":12, "recipientId":1}
+            if (root.has("type") && "READ".equalsIgnoreCase(root.get("type").getAsString())) {
+                if (root.has("chatId")) {
+                    Long chatId = root.get("chatId").getAsLong();
+                    Long readerId = (this.userId != null) ? this.userId : (root.has("readerId") ? root.get("readerId").getAsLong() : null);
+                    if (chatId != null && readerId != null) {
+                        chatService.markChatAsRead(chatId, readerId);
+                    }
+                    if (root.has("recipientId")) {
+                        Long partnerId = root.get("recipientId").getAsLong();
+                        Session partnerSession = activeSessions.get(partnerId);
+                        if (partnerSession != null && partnerSession.isOpen()) {
+                            JsonObject receipt = new JsonObject();
+                            receipt.addProperty("type", "READ_RECEIPT");
+                            receipt.addProperty("chatId", chatId);
+                            receipt.addProperty("readerId", readerId);
+                            synchronized (partnerSession) {
+                                partnerSession.getBasicRemote().sendText(gson.toJson(receipt));
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+
+            WebSocketMessageDTO incomingDto = gson.fromJson(root, WebSocketMessageDTO.class);
             if (incomingDto == null || incomingDto.getChatId() == null || incomingDto.getText() == null) {
                 LOGGER.warning("Incomplete message payload discarded: " + jsonPayload);
                 return;

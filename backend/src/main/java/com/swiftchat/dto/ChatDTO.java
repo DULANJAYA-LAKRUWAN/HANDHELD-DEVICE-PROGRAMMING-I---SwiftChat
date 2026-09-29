@@ -4,7 +4,8 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * Data Transfer Object representing a conversation channel with participant metadata.
+ * Data Transfer Object representing a conversation channel with participant metadata
+ * and WhatsApp-level unread message metrics.
  */
 public class ChatDTO implements Serializable {
 
@@ -16,18 +17,25 @@ public class ChatDTO implements Serializable {
     private UserDTO otherUser;
     private WebSocketMessageDTO lastMessage;
     private Date createdAt;
+    private int unreadCount;
 
     public ChatDTO() {
     }
 
     public ChatDTO(Long chatId, Long user1Id, Long user2Id, UserDTO otherUser,
                    WebSocketMessageDTO lastMessage, Date createdAt) {
+        this(chatId, user1Id, user2Id, otherUser, lastMessage, createdAt, 0);
+    }
+
+    public ChatDTO(Long chatId, Long user1Id, Long user2Id, UserDTO otherUser,
+                   WebSocketMessageDTO lastMessage, Date createdAt, int unreadCount) {
         this.chatId = chatId;
         this.user1Id = user1Id;
         this.user2Id = user2Id;
         this.otherUser = otherUser;
         this.lastMessage = lastMessage;
         this.createdAt = createdAt;
+        this.unreadCount = unreadCount;
     }
 
     public Long getChatId() {
@@ -76,5 +84,13 @@ public class ChatDTO implements Serializable {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public int getUnreadCount() {
+        return unreadCount;
+    }
+
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
     }
 }

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.swiftchat.dto.ApiResponseDTO;
 import com.swiftchat.dto.WebSocketMessageDTO;
 import com.swiftchat.service.ChatService;
+import com.swiftchat.util.GsonProvider;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,9 +20,9 @@ import java.util.logging.Logger;
 /**
  * REST Servlet for retrieving chronological message history for a chat.
  * Supported URL patterns:
- * - GET /api/chats/messages?chatId={chatId}
- * - GET /api/chats/messages/{chatId}
- * - GET /api/messages/{chatId}
+ * - GET /api/chats/messages?chatId={chatId}&userId={userId}
+ * - GET /api/chats/messages/{chatId}?userId={userId}
+ * - GET /api/messages/{chatId}?userId={userId}
  */
 @WebServlet(name = "ChatHistoryServlet", urlPatterns = {"/api/chats/messages", "/api/chats/messages/*", "/api/messages/*"})
 public class ChatHistoryServlet extends HttpServlet {
@@ -34,12 +35,12 @@ public class ChatHistoryServlet extends HttpServlet {
 
     public ChatHistoryServlet() {
         this.chatService = new ChatService();
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     public ChatHistoryServlet(ChatService chatService) {
         this.chatService = chatService;
-        this.gson = new Gson();
+        this.gson = GsonProvider.getGson();
     }
 
     @Override
@@ -55,6 +56,17 @@ public class ChatHistoryServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             out.write(gson.toJson(ApiResponseDTO.error("Chat ID must be provided in path (/api/chats/messages/{chatId}) or as query parameter (?chatId={chatId}).")));
             return;
+        }
+
+        // If current user is provided, mark incoming messages as read
+        String userIdParam = request.getParameter("userId");
+        if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+            try {
+                Long currentUserId = Long.parseLong(userIdParam.trim());
+                chatService.markChatAsRead(chatId, currentUserId);
+            } catch (Exception ex) {
+                LOGGER.warning("Could not auto-mark messages as read: " + ex.getMessage());
+            }
         }
 
         try {

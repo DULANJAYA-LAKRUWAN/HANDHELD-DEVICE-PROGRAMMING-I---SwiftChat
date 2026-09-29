@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { formatTime } from '../utils/formatDate';
+import { formatBubbleTime } from '../utils/formatDate';
 
 /**
  * Reusable chat message bubble component.
  * Adapts alignment and theme based on message sender identity.
+ * Displays WhatsApp-style timestamps and blue/grey delivery ticks.
  *
  * @param {Object} props.message - WebSocketMessageDTO object
  * @param {boolean} props.isCurrentUser - true if message sent by logged-in user
@@ -14,19 +15,20 @@ export default function ChatBubble({ message, isCurrentUser, currentUserId }) {
     isCurrentUser !== undefined
       ? Boolean(isCurrentUser)
       : message?.senderId != null && currentUserId != null && Number(message.senderId) === Number(currentUserId);
-  const formattedTime = formatTime(message?.timestamp);
+  const formattedTime = formatBubbleTime(message?.timestamp);
 
-  const getStatusIndicator = () => {
+  const renderStatusTicks = () => {
     if (!isOutgoing) return null;
-    switch (message?.status) {
-      case 'READ':
-        return ' ✓✓';
-      case 'DELIVERED':
-        return ' ✓✓';
-      case 'SENT':
-      default:
-        return ' ✓';
-    }
+    const isRead = message?.status === 'READ';
+    const isDelivered = message?.status === 'DELIVERED';
+    const tickColor = isRead ? '#38BDF8' : 'rgba(255, 255, 255, 0.7)';
+    const tickText = isRead || isDelivered ? '✓✓' : '✓';
+
+    return (
+      <Text style={[styles.ticks, { color: tickColor }]}>
+        {tickText}
+      </Text>
+    );
   };
 
   return (
@@ -54,8 +56,8 @@ export default function ChatBubble({ message, isCurrentUser, currentUserId }) {
             ]}
           >
             {formattedTime}
-            {getStatusIndicator()}
           </Text>
+          {renderStatusTicks()}
         </View>
       </View>
     </View>
@@ -125,5 +127,11 @@ const styles = StyleSheet.create({
   },
   incomingTimestamp: {
     color: '#94A3B8',
+  },
+  ticks: {
+    fontSize: 12,
+    marginLeft: 4,
+    fontWeight: '700',
+    letterSpacing: -1.5,
   },
 });

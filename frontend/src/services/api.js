@@ -105,8 +105,15 @@ class ApiClient {
     return this.post('/api/chats', { initiatorId, targetId });
   }
 
-  getChatMessages(chatId) {
-    return this.get(`/api/chats/messages?chatId=${chatId}`);
+  getChatMessages(chatId, userId) {
+    const url = userId
+      ? `/api/chats/messages?chatId=${chatId}&userId=${userId}`
+      : `/api/chats/messages?chatId=${chatId}`;
+    return this.get(url);
+  }
+
+  markChatAsRead(chatId, userId) {
+    return this.post(`/api/chats/${chatId}/read?userId=${userId}`, {});
   }
 }
 
