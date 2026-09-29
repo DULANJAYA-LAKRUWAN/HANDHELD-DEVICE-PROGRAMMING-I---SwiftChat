@@ -57,6 +57,7 @@ export default function ChatScreen({ route }) {
 
   // For inverted FlatList: most recent message is at index 0 (bottom of screen)
   const reversedMessages = [...messages].reverse();
+  const hasMessages = reversedMessages.length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -64,13 +65,13 @@ export default function ChatScreen({ route }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* Real-time Connection Status Banner */}
-      {!isConnected && (
-        <View style={styles.connectingBanner}>
-          <ActivityIndicator size="small" color="#F59E0B" style={styles.bannerSpinner} />
-          <Text style={styles.connectingBannerText}>Connecting to real-time chat server...</Text>
-        </View>
-      )}
+      {/* Live Connection / Status Sub-Header */}
+      <View style={styles.statusBar}>
+        <View style={[styles.statusDot, isConnected ? styles.dotOnline : styles.dotOffline]} />
+        <Text style={[styles.statusText, isConnected ? styles.textOnline : styles.textOffline]}>
+          {isConnected ? 'Real-Time WebSocket Connected' : 'Connecting to real-time server...'}
+        </Text>
+      </View>
 
       {/* Message History Loading Indicator */}
       {isLoadingHistory && (
@@ -99,8 +100,9 @@ export default function ChatScreen({ route }) {
           item.messageId ? item.messageId.toString() : `temp-${index}`
         }
         renderItem={renderMessageItem}
-        inverted
-        contentContainerStyle={styles.messagesContainer}
+        inverted={hasMessages}
+        contentContainerStyle={hasMessages ? styles.messagesContainer : styles.emptyContentContainer}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           !isLoadingHistory ? (
             <View style={styles.emptyContainer}>
@@ -110,10 +112,10 @@ export default function ChatScreen({ route }) {
                 </Text>
               </View>
               <Text style={styles.emptyTitle}>
-                Say hello to @{otherUser?.username || 'User'}!
+                Say hello to @{otherUser?.username || 'User'}! 👋
               </Text>
               <Text style={styles.emptySubtitle}>
-                No messages yet. Send a message below to start the conversation.
+                No messages yet. Send a message below to start the live conversation.
               </Text>
             </View>
           ) : null
@@ -146,7 +148,7 @@ export default function ChatScreen({ route }) {
               (!inputText.trim() || !isConnected) && styles.sendButtonTextDisabled,
             ]}
           >
-            Send
+            ➤
           </Text>
         </TouchableOpacity>
       </View>
@@ -159,30 +161,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F172A',
   },
-  connectingBanner: {
+  statusBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingVertical: 6,
-    paddingHorizontal: 16,
+    backgroundColor: '#1E293B',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(245, 158, 11, 0.3)',
+    borderBottomColor: '#334155',
   },
-  bannerSpinner: {
-    marginRight: 8,
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
-  connectingBannerText: {
-    color: '#F59E0B',
+  dotOnline: {
+    backgroundColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+  },
+  dotOffline: {
+    backgroundColor: '#F59E0B',
+  },
+  statusText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  textOnline: {
+    color: '#86EFAC',
+  },
+  textOffline: {
+    color: '#FCD34D',
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
   },
   loadingText: {
     color: '#94A3B8',
@@ -207,78 +226,100 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'flex-end',
   },
+  emptyContentContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingVertical: 48,
-    transform: [{ scaleY: -1 }], // Counteracts FlatList inverted orientation
+    paddingVertical: 32,
   },
   avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: '#0284C7',
+    borderWidth: 3,
+    borderColor: '#38BDF8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
   },
   avatarPlaceholderText: {
     color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '800',
   },
   emptyTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#F8FAFC',
-    marginBottom: 6,
+    marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#94A3B8',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 20,
+    maxWidth: 280,
   },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1E293B',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 14 : 20, // Prevents Android navigation bar collision
     borderTopWidth: 1,
     borderTopColor: '#334155',
   },
   textInput: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
+    minHeight: 44,
+    maxHeight: 110,
     backgroundColor: '#0F172A',
     color: '#F8FAFC',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     fontSize: 15,
     borderWidth: 1,
     borderColor: '#334155',
   },
   sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#0284C7',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
     marginLeft: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   sendButtonDisabled: {
     backgroundColor: '#334155',
+    elevation: 0,
+    shadowOpacity: 0,
   },
   sendButtonText: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 18,
+    marginLeft: 2, // Optical centering for arrow icon
   },
   sendButtonTextDisabled: {
     color: '#64748B',

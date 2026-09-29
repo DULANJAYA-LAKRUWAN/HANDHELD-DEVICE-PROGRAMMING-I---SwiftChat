@@ -39,7 +39,14 @@ class ApiClient {
         data = await response.json();
       } else {
         const text = await response.text();
-        data = { message: text };
+        let cleanMessage = text;
+        if (text && (text.includes('<html') || text.includes('<!DOCTYPE') || text.includes('<title>'))) {
+          const titleMatch = text.match(/<title>(.*?)<\/title>/i);
+          cleanMessage = titleMatch
+            ? `${titleMatch[1].trim()} (${response.status})`
+            : `Server returned HTTP ${response.status}`;
+        }
+        data = { message: cleanMessage };
       }
 
       if (!response.ok) {
