@@ -51,6 +51,11 @@ public final class HibernateUtil {
             // Load base settings and entity mappings from XML descriptor
             configuration.configure("hibernate.cfg.xml");
 
+            // Explicitly register annotated entity classes to ensure detection in all classloaders
+            configuration.addAnnotatedClass(com.swiftchat.entity.User.class);
+            configuration.addAnnotatedClass(com.swiftchat.entity.Chat.class);
+            configuration.addAnnotatedClass(com.swiftchat.entity.Message.class);
+
             // Resolve environment variables with system property fallbacks
             String host = getEnvOrDefault("DB_HOST", "localhost");
             String port = getEnvOrDefault("DB_PORT", "3306");
