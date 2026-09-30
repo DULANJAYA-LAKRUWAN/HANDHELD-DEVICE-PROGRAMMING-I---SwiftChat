@@ -69,9 +69,10 @@ export function useChat(chatId, currentUserId, targetUserId) {
 
   // 2. Establish and manage native WebSocket connection
   useEffect(() => {
-    if (!currentUserId) return;
-
-    const socketUrl = `${WS_BASE_URL}/${currentUserId}`;
+    const activeWsBase = api.baseUrl
+      ? `${api.baseUrl.replace(/^http/, 'ws')}/ws/chat`
+      : WS_BASE_URL;
+    const socketUrl = `${activeWsBase}/${currentUserId}`;
     console.log(`Connecting to WebSocket: ${socketUrl}`);
 
     const ws = new WebSocket(socketUrl);

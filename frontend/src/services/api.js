@@ -1,12 +1,13 @@
-import { API_BASE_URL } from '../constants/config.js';
+import { API_BASE_URL, FALLBACK_API_BASE_URL } from '../constants/config.js';
 
 /**
  * Lightweight HTTP Client for SwiftChat Backend REST APIs
  * Wraps standard Fetch API with JSON serialization and structured error handling.
  */
 class ApiClient {
-  constructor(baseUrl) {
+  constructor(baseUrl, fallbackUrl = FALLBACK_API_BASE_URL) {
     this.baseUrl = baseUrl;
+    this.fallbackUrl = fallbackUrl;
     this.authToken = null;
   }
 
@@ -68,6 +69,40 @@ class ApiClient {
       return data;
     } catch (error) {
       if (error.name === 'TypeError' && error.message.includes('Network request failed')) {
+        // If primary URL failed, try fallback (e.g., vanilla emulator without ADB reverse)
+        if (this.fallbackUrl && this.fallbackUrl !== this.baseUrl) {
+          try {
+            const fallbackUrl = `${this.fallbackUrl}${endpoint}`;
+            const fallbackResponse = await fetch(fallbackUrl, config);
+            let fallbackData = null;
+            const fbContentType = fallbackResponse.headers.get('content-type');
+            if (fbContentType && fbContentType.includes('application/json')) {
+              fallbackData = await fallbackResponse.json();
+            } else {
+              const fbText = await fallbackResponse.text();
+              fallbackData = { message: fbText };
+            }
+
+            if (!fallbackResponse.ok) {
+              const errorMessage =
+                (fallbackData && fallbackData.message) ||
+                `Request failed with status ${fallbackResponse.status} (${fallbackResponse.statusText})`;
+              const fbError = new Error(errorMessage);
+              fbError.status = fallbackResponse.status;
+              fbError.data = fallbackData;
+              throw fbError;
+            }
+
+            // Adopt fallback URL for future requests
+            this.baseUrl = this.fallbackUrl;
+            return fallbackData;
+          } catch (fallbackError) {
+            if (fallbackError.status !== undefined && fallbackError.status !== 0) {
+              throw fallbackError;
+            }
+          }
+        }
+
         const networkError = new Error(
           'Unable to reach backend server. Please verify the server is running on ' + this.baseUrl
         );
