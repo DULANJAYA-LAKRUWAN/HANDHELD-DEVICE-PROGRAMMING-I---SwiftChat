@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../constants/config';
+import { API_BASE_URL } from '../constants/config.js';
 
 /**
  * Lightweight HTTP Client for SwiftChat Backend REST APIs

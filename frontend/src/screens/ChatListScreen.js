@@ -59,6 +59,7 @@ export default function ChatListScreen({ navigation }) {
 
   const renderChatItem = ({ item }) => {
     const partnerName = item.otherUser ? item.otherUser.username : 'Unknown User';
+    const initial = partnerName.charAt(0).toUpperCase();
     let lastMsg = 'No messages yet';
     if (item.lastMessage && item.lastMessage.text) {
       if (item.lastMessage.text.startsWith('[IMAGE]:')) {

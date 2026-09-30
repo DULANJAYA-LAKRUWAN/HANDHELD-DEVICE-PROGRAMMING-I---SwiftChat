@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "node --test src/__tests__/*.test.mjs",
+    "test:smoke": "node --test src/__tests__/*.test.mjs ../database/tests/*.test.mjs",
+    "test:e2e": "node --test ../scripts/e2e-test.mjs",
+    "test:all": "node ../scripts/run-all-tests.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "~1.23.1",

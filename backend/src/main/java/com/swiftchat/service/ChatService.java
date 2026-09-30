@@ -14,16 +14,12 @@ import com.swiftchat.entity.User;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Service orchestrating chat sessions, canonical participant ordering,
  * message processing, and history retrieval.
  */
 public class ChatService {
-
-    private static final Logger LOGGER = Logger.getLogger(ChatService.class.getName());
 
     private final ChatDao chatDao;
     private final MessageDao messageDao;
