@@ -7,6 +7,11 @@ import { API_BASE_URL } from '../constants/config';
 class ApiClient {
   constructor(baseUrl) {
     this.baseUrl = baseUrl;
+    this.authToken = null;
+  }
+
+  setAuthToken(token) {
+    this.authToken = token;
   }
 
   /**
@@ -18,6 +23,7 @@ class ApiClient {
     const headers = {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...(this.authToken ? { Authorization: `Bearer ${this.authToken}` } : {}),
       ...(options.headers || {}),
     };
 

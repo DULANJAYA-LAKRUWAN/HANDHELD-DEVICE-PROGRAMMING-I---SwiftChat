@@ -6,8 +6,8 @@ import com.swiftchat.dao.UserDao;
 import com.swiftchat.dto.ApiResponseDTO;
 import com.swiftchat.dto.UserDTO;
 import com.swiftchat.entity.User;
-import com.swiftchat.exception.DuplicateUserException;
 import com.swiftchat.util.GsonProvider;
+import com.swiftchat.util.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -52,15 +52,33 @@ public class UserProfileServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
-        String userIdParam = request.getParameter("userId");
-        if (userIdParam == null || userIdParam.trim().isEmpty()) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            out.write(gson.toJson(ApiResponseDTO.error("Query parameter 'userId' is required.")));
-            return;
-        }
-
         try {
-            Long userId = Long.parseLong(userIdParam.trim());
+            String authHeader = request.getHeader("Authorization");
+            Long tokenUserId = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7).trim();
+                if (JwtUtil.validateToken(token)) {
+                    tokenUserId = JwtUtil.extractUserId(token);
+                }
+            }
+
+            String userIdParam = request.getParameter("userId");
+            Long userId = null;
+            if (userIdParam != null && !userIdParam.trim().isEmpty()) {
+                try {
+                    userId = Long.parseLong(userIdParam.trim());
+                } catch (NumberFormatException ignored) {
+                }
+            } else if (tokenUserId != null) {
+                userId = tokenUserId;
+            }
+
+            if (userId == null) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out.write(gson.toJson(ApiResponseDTO.error("User identification required via query parameter 'userId' or Authorization Bearer token.")));
+                return;
+            }
+
             User user = userDao.getUserById(userId);
             if (user == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -71,9 +89,6 @@ public class UserProfileServlet extends HttpServlet {
             response.setStatus(HttpServletResponse.SC_OK);
             out.write(gson.toJson(ApiResponseDTO.success("Profile retrieved successfully.", UserDTO.fromEntity(user))));
 
-        } catch (NumberFormatException nfe) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            out.write(gson.toJson(ApiResponseDTO.error("Invalid 'userId' format.")));
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Error retrieving user profile.", ex);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -100,14 +115,29 @@ public class UserProfileServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         try {
+            String authHeader = request.getHeader("Authorization");
+            Long tokenUserId = null;
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7).trim();
+                if (JwtUtil.validateToken(token)) {
+                    tokenUserId = JwtUtil.extractUserId(token);
+                }
+            }
+
             JsonObject body = gson.fromJson(request.getReader(), JsonObject.class);
-            if (body == null || !body.has("userId")) {
+            Long userId = null;
+            if (body != null && body.has("userId")) {
+                userId = body.get("userId").getAsLong();
+            } else if (tokenUserId != null) {
+                userId = tokenUserId;
+            }
+
+            if (userId == null) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.write(gson.toJson(ApiResponseDTO.error("Missing 'userId' in update payload.")));
+                out.write(gson.toJson(ApiResponseDTO.error("Missing 'userId' in update payload or Authorization Bearer token.")));
                 return;
             }
 
-            Long userId = body.get("userId").getAsLong();
             User user = userDao.getUserById(userId);
             if (user == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -115,7 +145,7 @@ public class UserProfileServlet extends HttpServlet {
                 return;
             }
 
-            if (body.has("contactNo")) {
+            if (body != null && body.has("contactNo")) {
                 String newContact = body.get("contactNo").getAsString().trim();
                 if (!newContact.isEmpty()) {
                     User existingWithContact = userDao.getUserByContactNo(newContact);

@@ -17,15 +17,21 @@ public class UserDTO implements Serializable {
     private String username;
     private String contactNo;
     private Date createdAt;
+    private String token;
 
     public UserDTO() {
     }
 
     public UserDTO(Long id, String username, String contactNo, Date createdAt) {
+        this(id, username, contactNo, createdAt, null);
+    }
+
+    public UserDTO(Long id, String username, String contactNo, Date createdAt, String token) {
         this.id = id;
         this.username = username;
         this.contactNo = contactNo;
         this.createdAt = createdAt;
+        this.token = token;
     }
 
     /**
@@ -76,5 +82,13 @@ public class UserDTO implements Serializable {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

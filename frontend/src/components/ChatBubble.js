@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { formatBubbleTime } from '../utils/formatDate';
 
 /**
  * Reusable chat message bubble component.
  * Adapts alignment and theme based on message sender identity.
- * Displays WhatsApp-style timestamps and blue/grey delivery ticks.
+ * Displays WhatsApp-style timestamps, blue/grey delivery ticks,
+ * and handles text and image/media attachments.
  *
  * @param {Object} props.message - WebSocketMessageDTO object
  * @param {boolean} props.isCurrentUser - true if message sent by logged-in user
@@ -16,6 +17,9 @@ export default function ChatBubble({ message, isCurrentUser, currentUserId }) {
       ? Boolean(isCurrentUser)
       : message?.senderId != null && currentUserId != null && Number(message.senderId) === Number(currentUserId);
   const formattedTime = formatBubbleTime(message?.timestamp);
+
+  const isImageAttachment = message?.text && message.text.startsWith('[IMAGE]:');
+  const imageUrl = isImageAttachment ? message.text.replace('[IMAGE]:', '').trim() : null;
 
   const renderStatusTicks = () => {
     if (!isOutgoing) return null;
@@ -42,11 +46,22 @@ export default function ChatBubble({ message, isCurrentUser, currentUserId }) {
         style={[
           styles.bubble,
           isOutgoing ? styles.outgoingBubble : styles.incomingBubble,
+          isImageAttachment ? styles.imageBubble : null,
         ]}
       >
-        <Text style={[styles.messageText, isOutgoing ? styles.outgoingText : styles.incomingText]}>
-          {message?.text}
-        </Text>
+        {isImageAttachment ? (
+          <View style={styles.imageWrapper}>
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.attachmentImage}
+              resizeMode="cover"
+            />
+          </View>
+        ) : (
+          <Text style={[styles.messageText, isOutgoing ? styles.outgoingText : styles.incomingText]}>
+            {message?.text}
+          </Text>
+        )}
 
         <View style={styles.metaRow}>
           <Text
@@ -133,5 +148,20 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: '700',
     letterSpacing: -1.5,
+  },
+  imageBubble: {
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+  imageWrapper: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  attachmentImage: {
+    width: 240,
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: '#0F172A',
   },
 });

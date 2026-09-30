@@ -59,8 +59,14 @@ export default function ChatListScreen({ navigation }) {
 
   const renderChatItem = ({ item }) => {
     const partnerName = item.otherUser ? item.otherUser.username : 'Unknown User';
-    const initial = partnerName.charAt(0).toUpperCase();
-    const lastMsg = item.lastMessage ? item.lastMessage.text : 'No messages yet';
+    let lastMsg = 'No messages yet';
+    if (item.lastMessage && item.lastMessage.text) {
+      if (item.lastMessage.text.startsWith('[IMAGE]:')) {
+        lastMsg = '📷 Photo';
+      } else {
+        lastMsg = item.lastMessage.text;
+      }
+    }
     const rawTimestamp = item.lastMessage ? item.lastMessage.timestamp : item.createdAt;
     const timestamp = formatChatListDate(rawTimestamp);
 

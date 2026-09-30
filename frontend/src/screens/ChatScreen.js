@@ -8,12 +8,20 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
   StyleSheet,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../hooks/useChat';
 import ChatBubble from '../components/ChatBubble';
 import { formatDateDivider, parseDate } from '../utils/formatDate';
+
+const ATTACHMENT_PRESETS = [
+  { label: '🌿 Nature Scenic', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800' },
+  { label: '💻 Workspace', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800' },
+  { label: '🌆 Cityscape', url: 'https://images.unsplash.com/photo-1477959858617-67f30bc75b82?w=800' },
+  { label: '☕ Coffee Lounge', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800' },
+];
 
 /**
  * Real-Time Chat Screen
@@ -23,6 +31,8 @@ export default function ChatScreen({ route }) {
   const { chatId, otherUser } = route.params || {};
   const { user } = useAuth();
   const [inputText, setInputText] = useState('');
+  const [isAttachmentModalVisible, setIsAttachmentModalVisible] = useState(false);
+  const [customImageUrl, setCustomImageUrl] = useState('');
 
   const {
     messages,
@@ -43,6 +53,13 @@ export default function ChatScreen({ route }) {
     if (sent) {
       setInputText('');
     }
+  };
+
+  const handleSendImage = (url) => {
+    if (!url || !url.trim() || !isConnected) return;
+    sendMessage(`[IMAGE]:${url.trim()}`);
+    setIsAttachmentModalVisible(false);
+    setCustomImageUrl('');
   };
 
   // For inverted FlatList: most recent message is at index 0 (bottom of screen)
@@ -158,6 +175,15 @@ export default function ChatScreen({ route }) {
 
       {/* Composer Input Bar */}
       <View style={styles.inputBar}>
+        <TouchableOpacity
+          style={styles.attachmentButton}
+          onPress={() => setIsAttachmentModalVisible(true)}
+          disabled={!isConnected}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.attachmentIcon}>📎</Text>
+        </TouchableOpacity>
+
         <TextInput
           style={styles.textInput}
           placeholder="Type a message..."
@@ -186,6 +212,64 @@ export default function ChatScreen({ route }) {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Media Attachment Modal */}
+      <Modal
+        visible={isAttachmentModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsAttachmentModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.attachmentModalCard}>
+            <Text style={styles.attachmentModalTitle}>Share Media / Photo</Text>
+            <Text style={styles.attachmentModalSubtitle}>
+              Select a photo preset or paste a direct image URL:
+            </Text>
+
+            <View style={styles.presetGrid}>
+              {ATTACHMENT_PRESETS.map((preset, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.presetButton}
+                  onPress={() => handleSendImage(preset.url)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.presetButtonText}>{preset.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.urlInputRow}>
+              <TextInput
+                style={styles.urlInput}
+                placeholder="https://example.com/photo.jpg"
+                placeholderTextColor="#64748B"
+                value={customImageUrl}
+                onChangeText={setCustomImageUrl}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendUrlButton,
+                  !customImageUrl.trim() && styles.sendButtonDisabled,
+                ]}
+                onPress={() => handleSendImage(customImageUrl)}
+                disabled={!customImageUrl.trim()}
+              >
+                <Text style={styles.sendUrlButtonText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setIsAttachmentModalVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -381,5 +465,103 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+  },
+  attachmentButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  attachmentIcon: {
+    fontSize: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  attachmentModalCard: {
+    backgroundColor: '#1E293B',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  attachmentModalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    marginBottom: 4,
+  },
+  attachmentModalSubtitle: {
+    fontSize: 13,
+    color: '#94A3B8',
+    marginBottom: 16,
+  },
+  presetGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  presetButton: {
+    backgroundColor: '#0F172A',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+  },
+  presetButtonText: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  urlInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  urlInput: {
+    flex: 1,
+    height: 44,
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    color: '#FFFFFF',
+    paddingHorizontal: 14,
+    fontSize: 14,
+  },
+  sendUrlButton: {
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendUrlButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  modalCloseButton: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  modalCloseText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

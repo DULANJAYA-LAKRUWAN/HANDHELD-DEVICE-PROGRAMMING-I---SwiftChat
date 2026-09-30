@@ -28,6 +28,9 @@ export function AuthProvider({ children }) {
         if (storedUserData) {
           const parsedUser = JSON.parse(storedUserData);
           setUser(parsedUser);
+          if (parsedUser && parsedUser.token) {
+            api.setAuthToken(parsedUser.token);
+          }
         }
       } catch (err) {
         console.error('Failed to load user session from local storage:', err);
@@ -46,6 +49,9 @@ export function AuthProvider({ children }) {
     const res = await api.login(username, password);
     if (res && res.data) {
       setUser(res.data);
+      if (res.data.token) {
+        api.setAuthToken(res.data.token);
+      }
       await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(res.data));
       return res.data;
     }
@@ -59,6 +65,9 @@ export function AuthProvider({ children }) {
     const res = await api.register(username, password, contactNo);
     if (res && res.data) {
       setUser(res.data);
+      if (res.data.token) {
+        api.setAuthToken(res.data.token);
+      }
       await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(res.data));
       return res.data;
     }
@@ -72,6 +81,9 @@ export function AuthProvider({ children }) {
     try {
       const mergedUser = { ...user, ...updatedData };
       setUser(mergedUser);
+      if (mergedUser.token) {
+        api.setAuthToken(mergedUser.token);
+      }
       await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mergedUser));
       return mergedUser;
     } catch (err) {
@@ -85,6 +97,7 @@ export function AuthProvider({ children }) {
    */
   const logout = async () => {
     try {
+      api.setAuthToken(null);
       await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
     } catch (err) {
       console.error('Error clearing local storage on logout:', err);

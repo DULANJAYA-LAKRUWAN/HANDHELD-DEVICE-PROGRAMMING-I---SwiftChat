@@ -74,6 +74,8 @@ public class RegisterServlet extends HttpServlet {
             );
 
             UserDTO userDTO = UserDTO.fromEntity(createdUser);
+            String token = com.swiftchat.util.JwtUtil.generateToken(createdUser.getId(), createdUser.getUsername());
+            userDTO.setToken(token);
             response.setStatus(HttpServletResponse.SC_CREATED);
             out.write(gson.toJson(ApiResponseDTO.success("Registration successful.", userDTO)));
 

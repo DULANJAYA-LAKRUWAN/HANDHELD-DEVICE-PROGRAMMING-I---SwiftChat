@@ -73,6 +73,8 @@ public class LoginServlet extends HttpServlet {
             );
 
             UserDTO userDTO = UserDTO.fromEntity(authenticatedUser);
+            String token = com.swiftchat.util.JwtUtil.generateToken(authenticatedUser.getId(), authenticatedUser.getUsername());
+            userDTO.setToken(token);
             response.setStatus(HttpServletResponse.SC_OK);
             out.write(gson.toJson(ApiResponseDTO.success("Login successful.", userDTO)));
 
